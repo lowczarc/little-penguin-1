@@ -1,0 +1,10 @@
+# This udev rule load the module in /home/lancelot/little_penguin_42/assignment-04/hello_world.ko when a Keyboard is connected
+#
+# The bInterfaceClass and bInterfaceProtocol are documented here https://www.usb.org/sites/default/files/documents/hid1_11.pdf
+# bInterfaceClass==03 => HID (Human Interface Devices)
+# bInterfaceProtocol==01 => Keyboard
+
+# TODO: This file has been tested with a Mouse (bInterfaceProtocol==02), it should work with a Keyboard but I don't have any usb keyboard here (Quarantine life 😢)
+#	I also need to get a dmesg log as a proof
+
+ACTION=="add", SUBSYSTEM=="usb", ATTR{bInterfaceClass}=="03", ATTR{bInterfaceProtocol}=="01", RUN+="/sbin/insmod /home/lancelot/little_penguin_42/assignment-04/hello_world.ko"
