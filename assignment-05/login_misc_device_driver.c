@@ -27,11 +27,11 @@ static struct miscdevice login_device = {
 
 static int __init lowczarc_init(void)
 {
-	int retval = misc_register(&login_device);
+	int error = misc_register(&login_device);
 
-	if (retval) {
-		printk(KERN_ERR "misc_register returned: %d\n", retval);
-		return retval;
+	if (error) {
+		printk(KERN_ERR "misc_register returned: %d\n", error);
+		return error;
 	}
 
 	printk(KERN_INFO "Login Misc Char Device Driver was loaded\n");
