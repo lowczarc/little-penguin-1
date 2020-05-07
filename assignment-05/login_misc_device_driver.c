@@ -5,6 +5,9 @@
 #include <linux/fs.h>
 #include <linux/miscdevice.h>
 
+#define LOGIN "lowczarc"
+#define LOGIN_SIZE 8
+
 static ssize_t misc_device_read(struct file *filp, char *buffer,
 				size_t length, loff_t * offset);
 static ssize_t misc_device_write(struct file *filp, const char *buffer,
@@ -48,21 +51,42 @@ static void __exit lowczarc_cleanup(void)
 static ssize_t misc_device_read(struct file *filp, char *buffer,
 				size_t length, loff_t * offset)
 {
-	int retval = length < 8 ? length : 8;
+	int retval;
+	size_t size_read;
 
-	strncpy(buffer, "lowczarc", retval);
+	if (*offset >= LOGIN_SIZE) {
+		return 0;
+	}
 
-	return retval;
+	size_read =
+	    length < LOGIN_SIZE - *offset ? length : LOGIN_SIZE - *offset;
+
+	retval = copy_to_user(buffer, LOGIN + *offset, size_read);
+
+	if (retval < 0)
+		return retval;
+	size_read -= retval;
+
+	*offset += size_read;
+
+	return size_read;
 }
 
 static ssize_t misc_device_write(struct file *filp, const char *buffer,
 				 size_t length, loff_t * offset)
 {
-	if (length != 8 || strncmp(buffer, "lowczarc", 8)) {
-		return -EINVAL;
-	}
+	char local_buffer[LOGIN_SIZE];
 
-	return 8;
+	if (length != LOGIN_SIZE)
+		return -EINVAL;
+
+	if (copy_from_user(local_buffer, buffer, LOGIN_SIZE))
+		return -EINVAL;
+
+	if (memcmp(local_buffer, LOGIN, LOGIN_SIZE))
+		return -EINVAL;
+
+	return LOGIN_SIZE;
 }
 
 module_init(lowczarc_init);
