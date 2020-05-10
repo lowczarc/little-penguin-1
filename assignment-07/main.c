@@ -3,6 +3,7 @@
 #include <linux/debugfs.h>
 #include <linux/init.h>
 #include <linux/jiffies.h>
+#include <linux/mutex.h>
 #include <linux/slab.h>
 
 #define LOGIN "lowczarc"
@@ -49,6 +50,8 @@ static struct file_operations foo_fops = {
 static char *Foo_stored_string = NULL;
 static size_t Foo_stored_size = 0;
 
+DEFINE_MUTEX(Foo_file_mutex);
+
 static int error_cleanup(void)
 {
 	printk(KERN_ERR "Failed to create virtual files");
@@ -56,23 +59,16 @@ static int error_cleanup(void)
 	return -1;
 }
 
-// TODO: The error handling doesn't seems to work, find why and fix it
-
 static int __init hello_init(void)
 {
 	Dfortytwo = debugfs_create_dir("fortytwo", NULL);
 
-	if ((long)Dfortytwo == -ENODEV) {
-		printk(KERN_ERR
-		       "DebugFS isn't mounted, \"mount -t debugfs none /sys/kernel/debug/\" to mount it");
+	if (Dfortytwo == NULL || (long)Dfortytwo == -ENODEV) {
+		printk(KERN_ERR "The directory fortytwo can't be created\n");
 		return -1;
 	}
 
-	if (Dfortytwo == NULL) {
-		printk(KERN_ERR "The directory fortytwo can't be created");
-		return -1;
-	}
-
+	printk(KERN_INFO "Dfortytwo = %ld\n", Dfortytwo);
 	Did = debugfs_create_file("id", 0666, Dfortytwo, NULL, &id_fops);
 
 	if (Did == NULL || (long)Did == -ENODEV)
@@ -153,20 +149,25 @@ static ssize_t jiffies_file_read(struct file *filp, char *buffer,
 	return size > length ? length : size;
 }
 
-// TODO: add mutex to avoid use after free when read and write at the same time
-
 static ssize_t foo_file_read(struct file *filp, char *buffer,
 			     size_t length, loff_t * offset)
 {
 	int retval;
 	size_t read_size;
-	if (Foo_stored_string == NULL)
+
+	mutex_lock(&Foo_file_mutex);
+
+	if (Foo_stored_string == NULL) {
+		mutex_unlock(&Foo_file_mutex);
 		return 0;
+	}
 
 	read_size = (Foo_stored_size - *offset) >
 	    length ? length : (Foo_stored_size - *offset);
 
 	retval = copy_to_user(buffer, Foo_stored_string + *offset, read_size);
+
+	mutex_unlock(&Foo_file_mutex);
 
 	if (retval < 0)
 		return retval;
@@ -193,9 +194,13 @@ static ssize_t foo_file_write(struct file *filp, const char *buffer,
 		return -EINVAL;
 	}
 
+	mutex_lock(&Foo_file_mutex);
+
 	kfree(Foo_stored_string);
 	Foo_stored_string = new_string;
 	Foo_stored_size = length;
+
+	mutex_unlock(&Foo_file_mutex);
 
 	return length;
 }
