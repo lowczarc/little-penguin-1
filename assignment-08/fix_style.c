@@ -26,7 +26,9 @@ static struct miscdevice myfd_device = {
 	.fops = &myfd_fops
 };
 
-char str[PAGE_SIZE];
+static char str[PAGE_SIZE];
+
+DEFINE_MUTEX(myfd_mutex);
 
 static int __init myfd_init(void)
 {
@@ -52,9 +54,11 @@ static ssize_t myfd_read(struct file *fp, char __user * user, size_t size,
 	int retval;
 	ssize_t str_size;
 
-	str_size = strlen(str);
-
 	rev_str = kmalloc(PAGE_SIZE, GFP_KERNEL);
+
+	mutex_lock(&myfd_mutex);
+
+	str_size = strlen(str);
 
 	for (t = str_size - 1, i = 0; t >= 0; t--, i++)
 		rev_str[i] = str[t];
@@ -62,6 +66,8 @@ static ssize_t myfd_read(struct file *fp, char __user * user, size_t size,
 	rev_str[i] = 0;
 
 	retval = simple_read_from_buffer(user, size, offs, rev_str, i);
+
+	mutex_unlock(&myfd_mutex);
 
 	kfree(rev_str);
 
@@ -76,8 +82,12 @@ static ssize_t myfd_write(struct file *fp, const char __user * user,
 	if (size + 1 >= PAGE_SIZE)
 		return -1;
 
-	res = simple_write_to_buffer(str, size, offs, user, size);
+	mutex_lock(&myfd_mutex);
+
+	res = simple_write_to_buffer(str, size, offs, user, PAGE_SIZE - 1);
 	str[res + 1] = 0;
+
+	mutex_unlock(&myfd_mutex);
 
 	return res + 1;
 }
