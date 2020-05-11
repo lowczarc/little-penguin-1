@@ -1,4 +1,5 @@
 MODULE_NAME=fix_style
+CFLAGS_fix_style.o = -Wall -Wtype-limits
 
 obj-m += $(MODULE_NAME).o
 
