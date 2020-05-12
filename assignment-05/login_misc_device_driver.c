@@ -10,6 +10,7 @@
 
 static ssize_t misc_device_read(struct file *filp, char *buffer,
 				size_t length, loff_t * offset);
+
 static ssize_t misc_device_write(struct file *filp, const char *buffer,
 				 size_t length, loff_t * offset);
 
@@ -54,9 +55,8 @@ static ssize_t misc_device_read(struct file *filp, char *buffer,
 	int retval;
 	size_t size_read;
 
-	if (*offset >= LOGIN_SIZE) {
+	if (*offset >= LOGIN_SIZE)
 		return 0;
-	}
 
 	size_read =
 	    length < LOGIN_SIZE - *offset ? length : LOGIN_SIZE - *offset;

@@ -11,6 +11,7 @@ MODULE_DESCRIPTION("Useless module");
 
 static ssize_t myfd_read(struct file *fp, char __user * user, size_t size,
 			 loff_t * offs);
+
 static ssize_t myfd_write(struct file *fp, const char __user * user,
 			  size_t size, loff_t * offs);
 

@@ -68,7 +68,6 @@ static int __init hello_init(void)
 		return -1;
 	}
 
-	printk(KERN_INFO "Dfortytwo = %ld\n", Dfortytwo);
 	Did = debugfs_create_file("id", 0666, Dfortytwo, NULL, &id_fops);
 
 	if (Did == NULL || (long)Did == -ENODEV)
@@ -106,9 +105,8 @@ static ssize_t id_file_read(struct file *filp, char *buffer,
 	int retval;
 	size_t size_read;
 
-	if (*offset >= LOGIN_SIZE) {
+	if (*offset >= LOGIN_SIZE)
 		return 0;
-	}
 
 	size_read =
 	    length < LOGIN_SIZE - *offset ? length : LOGIN_SIZE - *offset;
